@@ -1,0 +1,17 @@
+name: Run integration tests
+
+on:
+  push:
+
+permissions:
+  id-token: write
+  contents: read # This is required for actions/checkout
+  packages: read
+
+jobs:
+  test:
+    name: Run tests
+    uses: KL-Engineering/central-microgateway-configuration/.github/workflows/plugin-integration-test.yaml@main
+    with:
+      collection-path: <path to>.postman_collection.json
+      environment-path: <path to>.postman_environment.json
