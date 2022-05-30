@@ -1,6 +1,6 @@
-# Microgateway Custom Plugin Template
+# Microgateway access-log plugin
 
-This repository contains a template project for creating custom KrakenD plugins. _(To be injected into Microgateway deployments)_
+This is a Krakend plugin that publishes Kinesis events when the gateway is used.
 
 Any microgateway that wants to leverage a plugin should initialize a git-submodule in their `/plugins` directory with the respective plugin
 

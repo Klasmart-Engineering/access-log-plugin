@@ -1,7 +1,7 @@
 all: clean build
 
 build:
-	go build -buildmode=plugin -o wildcard.so .
+	go build -buildmode=plugin -o access-log-plugin.so .
 
 clean:
 	go clean
