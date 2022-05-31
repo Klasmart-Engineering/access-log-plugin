@@ -19,8 +19,6 @@ type AccessLog struct {
 }
 
 func firehoseSync(config *config, accesses chan AccessLog) {
-	//TODO: panic handler - should just start loop again
-
 	exit := make(chan os.Signal, 1)
 	signal.Notify(exit, os.Interrupt, syscall.SIGTERM)
 	signal.Notify(exit, os.Interrupt, syscall.SIGINT)
@@ -41,7 +39,14 @@ func firehoseSync(config *config, accesses chan AccessLog) {
 		batchCursor = 0
 	}
 
-	for {
+	processLoop := func() (shuttingDown bool) {
+		defer func() {
+			err := recover()
+			if err != nil {
+				logger.Error(logPrefix, "Panic during firehose sync loop", err)
+			}
+		}()
+
 		select {
 		case accessLog := <-accesses:
 			logger.Debug(logPrefix, "Received access log", accessLog)
@@ -57,6 +62,14 @@ func firehoseSync(config *config, accesses chan AccessLog) {
 		case <-exit:
 			logger.Debug(logPrefix, "Krakend shutting down, sending batch")
 			sendBatch()
+			return true
+		}
+
+		return false
+	}
+
+	for {
+		if processLoop() {
 			return
 		}
 	}
