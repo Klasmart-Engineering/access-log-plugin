@@ -24,8 +24,8 @@
         "access-log": {
           "product_name": "Test Product",
           "buffer_size": 5,
-          "firehose_batch_size": 2,
-          "firehose_send_early_timeout_ms": 45000,
+          "firehose_batch_size": 5,
+          "firehose_send_early_timeout_ms": 180000000,
           "ignore_paths": [
             "/__health",
             "/__stats",

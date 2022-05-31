@@ -1,35 +1,8 @@
 # Microgateway access-log plugin
 
-This is a Krakend plugin that publishes Kinesis events when the gateway is used.
+This is a Krakend plugin that pushes to Firehose when the gateway is used.
 
 Any microgateway that wants to leverage a plugin should initialize a git-submodule in their `/plugins` directory with the respective plugin
-
-## Steps
-
-1. Initialize the go module system
-
-```sh
-go mod init yourmodulename
-```
-
-2. To build your plugin run - this specifically builds it as a go plugin _(required by krakenD)_
-
-```sh
-go build -buildmode=plugin -o yourplugin.so .
-```
-
-3. Go into the `Makefile` and update the `build` target to have the same command as step 2. _(namely making the name of
-   the outputted `.so` file is correct)_
-
-4. Submit a PR to the [Central Repository](https://github.com/KL-Engineering/central-microgateway-configuration/blob/main/plugins.json) adding your repository to the list of plugin repositories. This will enable us to automatically raise PR's when updates are made centrally
-
-5. Go into `.github/workflows/integration-test.yaml` and update the information accordingly.
-
-## Included Artifacts
-
-### Dockerfile & KrakenD.json
-
-When developing a plugin, it is quite likely that you will want to run it against a KrakenD instance to debug/verify behaviour. The `Dockerfile` and `krakend.json` files give you a barebones gateway that you can very quickly get up and running with. Please feel free to customise this as you like.
 
 ### Makefile
 
@@ -86,13 +59,15 @@ CI/local development_
 
 You can then use the [reuseable workflow](https://github.com/KL-Engineering/central-microgateway-configuration/blob/main/.github/workflows/plugin-integration-test.yaml) to easily set up a CI pipeline for your plugin.
 
-## KrakenD Docs
+## Generating a JWT
 
-[Intro to plugins](https://www.krakend.io/docs/extending/introduction/)
+Since it's not the responsibility of this plugin to verify JWTs (this should be done by a plugin earlier in the pipeline in production Krakend instances), 
+you can produce arbitrary JWTs to use as the Authorization header with the following JS:
 
-There are four different types of plugins you can write:
+```
+const header = '{"alg": "HS256","typ": "JWT"}'
 
-1. **[HTTP server plugins](https://www.krakend.io/docs/extending/http-server-plugins/)** (or handler plugins): They belong to the router layer and let you modify the request before KrakenD starts processing it, or modify the final response. You can have several plugins at once.
-2. **[HTTP client plugins](https://www.krakend.io/docs/extending/http-client-plugins/)** (or proxy client plugins): They belong to the proxy layer and let you change how KrakenD interacts (as a client) with your backend services. You can have one plugin per backend.
-3. **[Response Modifier plugins](https://www.krakend.io/docs/extending/plugin-modifiers/)**: They are strictly modifiers and let you change the responses received from your backends.
-4. **[Request Modififer plugins](https://www.krakend.io/docs/extending/plugin-modifiers/)**: They are strictly modifiers and let you change the requests sent to your backends.
+const body = '{"sub": "sub-blabla","name": "Somebody","iat": 123456,"subscription_id": "a9de93fc-2d13-44dd-9272-da7f8c17d155","android_id": "07ff00e4-c1a5-4683-9fcb-613a734d8d3f"}'
+
+console.info(btoa(header).replace("=", "") + "." + btoa(body).replace("=", "") + "." + btoa("invalid signature").replace("=", ""))
+```
