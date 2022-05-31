@@ -2,9 +2,10 @@ package main
 
 import (
 	"context"
-	"errors"
+	uuid2 "github.com/google/uuid"
 	"github.com/luraproject/lura/v2/logging"
 	"net/http"
+	"time"
 )
 
 const logPrefix = "[PLUGIN:ACCESS-LOG]"
@@ -35,31 +36,32 @@ func (r registerer) RegisterHandlers(f func(
 	f(string(r), r.registerHandlers)
 }
 
-func (r registerer) registerHandlers(ctx context.Context, extra map[string]interface{}, _ http.Handler) (http.Handler, error) {
-	productName, err := getProductName(extra)
+func (r registerer) registerHandlers(ctx context.Context, extra map[string]interface{}, handler http.Handler) (http.Handler, error) {
+	config, err := getConfig(extra)
 	if err != nil {
 		return nil, err
 	}
 
+	accesses := make(chan AccessLog, config.channelBufferSize)
+	go firehoseSync(config, accesses)
+
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		logger.Info(logPrefix, "Request to", productName, ":", req.URL)
+		if config.ignoredPaths.anyMatch(req.URL.Path) {
+			logger.Debug(logPrefix, "Ignoring request to ", req.URL, "ignored path")
+			handler.ServeHTTP(w, req)
+			return
+		}
+
+		accesses <- AccessLog{
+			Id:             uuid2.New(),
+			OccurredAt:     time.Now().Unix(),
+			Product:        config.productName,
+			Method:         req.Method,
+			Path:           req.URL.Path,
+			AndroidId:      "TODO - GET FROM JWT",
+			SubscriptionId: uuid2.UUID{}, //TODO: GET FROM JWT too
+		}
+
+		handler.ServeHTTP(w, req)
 	}), nil
-}
-
-func getProductName(extra map[string]interface{}) (string, error) {
-	if _, ok := extra["access-log"]; !ok {
-		return "", errors.New("access-log config map missing from krakend.json")
-	}
-
-	if _, isMap := extra["access-log"].(map[string]interface{}); !isMap {
-		return "", errors.New("access-log config in krakend.json must be a map")
-	}
-
-	var productName string
-	var ok bool
-	if productName, ok = (extra["access-log"].(map[string]interface{})["product_name"]).(string); !ok {
-		return "", errors.New("product_name in access-log config map in krakend.json must be a string")
-	}
-
-	return productName, nil
 }
