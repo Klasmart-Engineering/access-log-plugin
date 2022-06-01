@@ -13,7 +13,11 @@ b:
 	docker buildx build -t gateway .
 
 r:
-	docker run -p "8080:8080" gateway
+	docker-compose down --remove-orphans && \
+    docker-compose rm -f -v && \
+	docker-compose up && \
+	docker-compose down --remove-orphans && \
+	docker-compose rm -f -v
 
 br: b r
 

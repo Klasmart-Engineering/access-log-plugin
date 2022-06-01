@@ -1,0 +1,13 @@
+{
+  "DeliveryStreamName": "factory-access-logs",
+  "DeliveryStreamType": "DirectPut",
+  "ExtendedS3DestinationConfiguration": {
+    "RoleARN": "arn:aws:iam::000000000000:role/super-role",
+    "BucketARN": "arn:aws:s3:::factory-access-log-bucket",
+    "ErrorOutputPrefix": "access-logs-error",
+    "BufferingHints": {
+      "SizeInMBs": 1,
+      "IntervalInSeconds": 60
+    }
+  }
+}

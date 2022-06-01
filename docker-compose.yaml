@@ -1,0 +1,17 @@
+version: '3.7'
+services:
+  gateway:
+    image: gateway
+    ports:
+      - "8080:8080"
+  localstack:
+    image: localstack/localstack:0.14.3
+    container_name: localstack
+    restart: always
+    environment:
+      - SERVICES=firehose,s3,iam
+      - EAGER_SERVICE_LOADING=true
+    ports:
+      - "4566:4566"
+    volumes:
+      - ./localstack-init:/docker-entrypoint-initaws.d

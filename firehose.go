@@ -1,6 +1,11 @@
 package main
 
 import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"github.com/aws/aws-sdk-go-v2/service/firehose"
+	"github.com/aws/aws-sdk-go-v2/service/firehose/types"
 	uuid2 "github.com/google/uuid"
 	"os"
 	"os/signal"
@@ -32,10 +37,7 @@ func firehoseSync(config *config, accesses chan AccessLog) {
 			return
 		}
 
-		err := sendBatchToFirehose(batch[:batchCursor])
-		if err != nil {
-			logger.Error(logPrefix, "Unable to send access log batch to Firehose - dropping", err)
-		}
+		sendBatchToFirehose(config.deliveryStreamName, batch[:batchCursor])
 		batchCursor = 0
 	}
 
@@ -75,12 +77,35 @@ func firehoseSync(config *config, accesses chan AccessLog) {
 	}
 }
 
-func sendBatchToFirehose(batch []AccessLog) error {
-	//TODO
-	logger.Debug("Sending batch to Firehose")
-	for i, batchItem := range batch {
-		logger.Info("Batch element", i, ":", batchItem)
+func sendBatchToFirehose(deliveryStreamName string, batch []AccessLog) {
+	logger.Debug(logPrefix, fmt.Sprintf("Sending batch of %d to Firehose", len(batch)))
+
+	records := make([]types.Record, len(batch))
+	for i, batchEntry := range batch {
+		//Note: this may be switched to another format after discussion with Aidan
+		serialised, err := json.Marshal(batchEntry)
+		if err != nil {
+			logger.Error(logPrefix, "Failed to serialise batch entry", batchEntry, err)
+		}
+
+		records[i] = types.Record{
+			Data: serialised,
+		}
 	}
 
-	return nil
+	output, err := FirehoseClient.PutRecordBatch(context.Background(), &firehose.PutRecordBatchInput{
+		DeliveryStreamName: &deliveryStreamName,
+		Records:            records,
+	})
+
+	if err != nil {
+		logger.Error(logPrefix, "Failed to send batch to Firehose, err.Error()", err)
+		return
+	}
+
+	if *output.FailedPutCount > int32(0) {
+		logger.Error(logPrefix, fmt.Sprintf("Failed to send %d of %d batch entries", output.FailedPutCount, len(batch)))
+	}
+
+	return
 }

@@ -10,6 +10,11 @@ type config struct {
 	channelBufferSize          int
 	firehoseBatchSize          int
 	firehoseSendEarlyTimeoutMs int
+	awsSecretKeyId             string
+	awsSecretKey               string
+	awsEndpoint                *string
+	awsRegion                  string
+	deliveryStreamName         string
 }
 
 type ignoredPath string
@@ -68,12 +73,47 @@ func getConfig(extra map[string]interface{}) (*config, error) {
 
 	firehoseSendEarlyTimeoutMs = int(firehoseSendEarlyTimeoutMsRaw)
 
+	var awsSecretKeyId string
+	if awsSecretKeyId, ok = (extra["access-log"].(map[string]interface{})["aws_secret_key_id"]).(string); !ok {
+		return nil, errors.New("aws_secret_key_id in access-log config map in krakend.json must be a string")
+	}
+
+	var awsSecretKey string
+	if awsSecretKey, ok = (extra["access-log"].(map[string]interface{})["aws_secret_key"]).(string); !ok {
+		return nil, errors.New("aws_secret_key in access-log config map in krakend.json must be a string")
+	}
+
+	var awsEndpoint *string
+	if _, exists := extra["access-log"].(map[string]interface{})["aws_endpoint"]; exists {
+		var awsEndpointRaw string
+		if awsEndpointRaw, ok = (extra["access-log"].(map[string]interface{})["aws_endpoint"]).(string); !ok {
+			return nil, errors.New("aws_endpoint in access-log config map in krakend.json must be a string")
+		}
+
+		awsEndpoint = &awsEndpointRaw
+	}
+
+	var awsRegion string
+	if awsRegion, ok = (extra["access-log"].(map[string]interface{})["aws_region"]).(string); !ok {
+		return nil, errors.New("aws_region in access-log config map in krakend.json must be a string")
+	}
+
+	var deliveryStreamName string
+	if deliveryStreamName, ok = (extra["access-log"].(map[string]interface{})["delivery_stream_name"]).(string); !ok {
+		return nil, errors.New("delivery_stream_name in access-log config map in krakend.json must be a string")
+	}
+
 	return &config{
 		productName:                productName,
 		ignoredPaths:               ignoredPaths,
 		channelBufferSize:          channelBufferSize,
 		firehoseBatchSize:          firehoseBatchSize,
 		firehoseSendEarlyTimeoutMs: firehoseSendEarlyTimeoutMs,
+		awsSecretKeyId:             awsSecretKeyId,
+		awsSecretKey:               awsSecretKey,
+		awsEndpoint:                awsEndpoint,
+		awsRegion:                  awsRegion,
+		deliveryStreamName:         deliveryStreamName,
 	}, nil
 }
 

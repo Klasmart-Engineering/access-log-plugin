@@ -42,6 +42,8 @@ func (r registerer) registerHandlers(ctx context.Context, extra map[string]inter
 		return nil, err
 	}
 
+	setupAWS(config)
+
 	accesses := make(chan AccessLog, config.channelBufferSize)
 	go firehoseSync(config, accesses)
 
