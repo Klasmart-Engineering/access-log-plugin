@@ -21,5 +21,20 @@ r:
 
 br: b r
 
-run-ci:
-	docker buildx build -t gateway . && docker run -d -p "8080:8080" gateway && sleep 5
+test-unit:
+	go test -v ./test/unit/...
+
+test-integration:
+	docker-compose -f docker-compose.yaml down --remove-orphans && \
+    docker-compose -f docker-compose.yaml rm -fv && \
+    rm -rf ./postgres-integration-data && \
+    make b && \
+    echo "print images" && \
+    docker images ls && \
+    docker-compose -f docker-compose.yaml up -d && \
+    echo "Starting integration tests" && \
+    go clean -testcache && \
+    go test -v ./test/integration/... && \
+    echo "Finished integration tests" && \
+    docker-compose -f docker-compose.yaml down --remove-orphans && \
+    docker-compose -f docker-compose.yaml rm -fv
