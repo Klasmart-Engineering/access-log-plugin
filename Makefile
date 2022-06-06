@@ -10,7 +10,7 @@ login:
 	echo ${GH_PAT} | docker login ghcr.io -u USERNAME --password-stdin
 
 b:
-	docker buildx build -t gateway .
+	docker buildx build -t gateway . --load
 
 r:
 	docker-compose down --remove-orphans && \
@@ -29,8 +29,6 @@ test-integration:
     docker-compose -f docker-compose.yaml rm -fv && \
     rm -rf ./postgres-integration-data && \
     make b && \
-    echo "print images" && \
-    docker images ls && \
     docker-compose -f docker-compose.yaml up -d && \
     echo "Starting integration tests" && \
     go clean -testcache && \

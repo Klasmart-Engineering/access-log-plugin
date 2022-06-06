@@ -15,4 +15,6 @@ func TestNoS3EntriesAreWrittenForIgnoredPaths(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Couldn't call endpoint: %s", err)
 	}
+
+	//TODO
 }
