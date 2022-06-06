@@ -6,7 +6,7 @@ import (
 
 type Config struct {
 	ProductName                string
-	IgnoredPaths               ignoredPaths
+	IgnoredPaths               IgnoredPaths
 	ChannelBufferSize          int
 	FirehoseBatchSize          int
 	FirehoseSendEarlyTimeoutMs int
@@ -17,8 +17,8 @@ type Config struct {
 	DeliveryStreamName         string
 }
 
-type ignoredPath string
-type ignoredPaths []ignoredPath
+type IgnoredPath string
+type IgnoredPaths []IgnoredPath
 
 func GetConfig(extra map[string]interface{}) (*Config, error) {
 	if _, exists := extra["access-log"]; !exists {
@@ -40,13 +40,13 @@ func GetConfig(extra map[string]interface{}) (*Config, error) {
 		return nil, errors.New("ignore_paths in access-log config map in krakend.json must be an array")
 	}
 
-	ignoredPaths := make([]ignoredPath, len(ignoredPathsRaw))
+	ignoredPaths := make([]IgnoredPath, len(ignoredPathsRaw))
 	for i, path := range ignoredPathsRaw {
 		if _, isString := path.(string); !isString {
 			return nil, errors.New("ignore_paths in access-log config map in krakend.json must contain only strings")
 		}
 
-		ignoredPaths[i] = ignoredPath(path.(string))
+		ignoredPaths[i] = IgnoredPath(path.(string))
 	}
 
 	var channelBufferSize int
@@ -117,7 +117,7 @@ func GetConfig(extra map[string]interface{}) (*Config, error) {
 	}, nil
 }
 
-func (ignoredPath ignoredPath) matches(path string) bool {
+func (ignoredPath IgnoredPath) matches(path string) bool {
 	var ignoredPathIndex, pathIndex int
 	for {
 		ignoredPathChar := ignoredPath[ignoredPathIndex]
@@ -136,11 +136,15 @@ func (ignoredPath ignoredPath) matches(path string) bool {
 			return true
 		}
 
-		if (ignoredPathIndex == len(ignoredPath)-1) || (pathIndex == len(path)-1) {
+		if (ignoredPathIndex == len(ignoredPath)-1 && ignoredPathChar != '*') || pathIndex == len(path)-1 {
 			return false
 		}
 
 		if ignoredPathChar != '*' || (ignoredPathChar == '*' && canPeekPathChar && peekPathChar == '/') {
+			if ignoredPathIndex == len(ignoredPath)-1 {
+				return false
+			}
+
 			ignoredPathIndex += 1
 		}
 
@@ -149,7 +153,7 @@ func (ignoredPath ignoredPath) matches(path string) bool {
 
 }
 
-func (ignoredPaths ignoredPaths) AnyMatch(path string) bool {
+func (ignoredPaths IgnoredPaths) AnyMatch(path string) bool {
 	for _, ignoredPath := range ignoredPaths {
 		if ignoredPath.matches(path) {
 			return true

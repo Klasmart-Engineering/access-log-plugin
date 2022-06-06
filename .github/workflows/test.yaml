@@ -1,0 +1,18 @@
+name: Run integration tests
+
+on:
+  push:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: '1.18.1'
+      - name: Run unit tests
+        run: go test -v ./test/unit/...
+#      - name: Run integration tests
+#        run: ./run-integration-tests.sh
