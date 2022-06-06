@@ -1,26 +1,26 @@
-package main
+package config
 
 import (
 	"errors"
 )
 
-type config struct {
-	productName                string
-	ignoredPaths               ignoredPaths
-	channelBufferSize          int
-	firehoseBatchSize          int
-	firehoseSendEarlyTimeoutMs int
-	awsSecretKeyId             string
-	awsSecretKey               string
-	awsEndpoint                *string
-	awsRegion                  string
-	deliveryStreamName         string
+type Config struct {
+	ProductName                string
+	IgnoredPaths               ignoredPaths
+	ChannelBufferSize          int
+	FirehoseBatchSize          int
+	FirehoseSendEarlyTimeoutMs int
+	AwsSecretKeyId             string
+	AwsSecretKey               string
+	AwsEndpoint                *string
+	AwsRegion                  string
+	DeliveryStreamName         string
 }
 
 type ignoredPath string
 type ignoredPaths []ignoredPath
 
-func getConfig(extra map[string]interface{}) (*config, error) {
+func GetConfig(extra map[string]interface{}) (*Config, error) {
 	if _, exists := extra["access-log"]; !exists {
 		return nil, errors.New("access-log config map missing from krakend.json")
 	}
@@ -103,17 +103,17 @@ func getConfig(extra map[string]interface{}) (*config, error) {
 		return nil, errors.New("delivery_stream_name in access-log config map in krakend.json must be a string")
 	}
 
-	return &config{
-		productName:                productName,
-		ignoredPaths:               ignoredPaths,
-		channelBufferSize:          channelBufferSize,
-		firehoseBatchSize:          firehoseBatchSize,
-		firehoseSendEarlyTimeoutMs: firehoseSendEarlyTimeoutMs,
-		awsSecretKeyId:             awsSecretKeyId,
-		awsSecretKey:               awsSecretKey,
-		awsEndpoint:                awsEndpoint,
-		awsRegion:                  awsRegion,
-		deliveryStreamName:         deliveryStreamName,
+	return &Config{
+		ProductName:                productName,
+		IgnoredPaths:               ignoredPaths,
+		ChannelBufferSize:          channelBufferSize,
+		FirehoseBatchSize:          firehoseBatchSize,
+		FirehoseSendEarlyTimeoutMs: firehoseSendEarlyTimeoutMs,
+		AwsSecretKeyId:             awsSecretKeyId,
+		AwsSecretKey:               awsSecretKey,
+		AwsEndpoint:                awsEndpoint,
+		AwsRegion:                  awsRegion,
+		DeliveryStreamName:         deliveryStreamName,
 	}, nil
 }
 
@@ -149,7 +149,7 @@ func (ignoredPath ignoredPath) matches(path string) bool {
 
 }
 
-func (ignoredPaths ignoredPaths) anyMatch(path string) bool {
+func (ignoredPaths ignoredPaths) AnyMatch(path string) bool {
 	for _, ignoredPath := range ignoredPaths {
 		if ignoredPath.matches(path) {
 			return true

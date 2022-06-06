@@ -1,7 +1,7 @@
 all: clean build
 
 build:
-	go build -buildmode=plugin -o access-log-plugin.so .
+	go build -buildmode=plugin -o access-log-plugin.so ./src/main.go
 
 clean:
 	go clean

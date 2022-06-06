@@ -1,6 +1,9 @@
-package main
+package firehose
 
 import (
+	"access-log/src/aws"
+	"access-log/src/config"
+	"access-log/src/logging"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -23,21 +26,21 @@ type AccessLog struct {
 	SubscriptionId uuid2.UUID
 }
 
-func firehoseSync(config *config, accesses chan AccessLog) {
+func FirehoseSync(config *config.Config, accesses chan AccessLog) {
 	exit := make(chan os.Signal, 1)
 	signal.Notify(exit, os.Interrupt, syscall.SIGTERM)
 	signal.Notify(exit, os.Interrupt, syscall.SIGINT)
 
-	batch := make([]AccessLog, config.firehoseBatchSize)
+	batch := make([]AccessLog, config.FirehoseBatchSize)
 	batchCursor := 0
 
 	sendBatch := func() {
 		if batchCursor == 0 {
-			logger.Debug(logPrefix, "Nothing in batch to send")
+			logging.Debug("Nothing in batch to send")
 			return
 		}
 
-		sendBatchToFirehose(config.deliveryStreamName, batch[:batchCursor])
+		sendBatchToFirehose(config.DeliveryStreamName, batch[:batchCursor])
 		batchCursor = 0
 	}
 
@@ -45,24 +48,24 @@ func firehoseSync(config *config, accesses chan AccessLog) {
 		defer func() {
 			err := recover()
 			if err != nil {
-				logger.Error(logPrefix, "Panic during firehose sync loop", err)
+				logging.Error("Panic during firehose sync loop", err)
 			}
 		}()
 
 		select {
 		case accessLog := <-accesses:
-			logger.Debug(logPrefix, "Received access log", accessLog)
+			logging.Debug("Received access log", accessLog)
 			batch[batchCursor] = accessLog
 			batchCursor += 1
 
-			if batchCursor == config.firehoseBatchSize {
+			if batchCursor == config.FirehoseBatchSize {
 				sendBatch()
 			}
-		case <-time.After(time.Duration(config.firehoseSendEarlyTimeoutMs) * time.Millisecond):
-			logger.Debug(logPrefix, "Sending batch early as send early timeout exceeded")
+		case <-time.After(time.Duration(config.FirehoseSendEarlyTimeoutMs) * time.Millisecond):
+			logging.Debug("Sending batch early as send early timeout exceeded")
 			sendBatch()
 		case <-exit:
-			logger.Debug(logPrefix, "Krakend shutting down, sending batch")
+			logging.Debug("Krakend shutting down, sending batch")
 			sendBatch()
 			return true
 		}
@@ -78,14 +81,14 @@ func firehoseSync(config *config, accesses chan AccessLog) {
 }
 
 func sendBatchToFirehose(deliveryStreamName string, batch []AccessLog) {
-	logger.Debug(logPrefix, fmt.Sprintf("Sending batch of %d to Firehose", len(batch)))
+	logging.Debug(fmt.Sprintf("Sending batch of %d to Firehose", len(batch)))
 
 	records := make([]types.Record, len(batch))
 	for i, batchEntry := range batch {
 		//Note: this may be switched to another format after discussion with Aidan
 		serialised, err := json.Marshal(batchEntry)
 		if err != nil {
-			logger.Error(logPrefix, "Failed to serialise batch entry", batchEntry, err)
+			logging.Error("Failed to serialise batch entry", batchEntry, err)
 		}
 
 		records[i] = types.Record{
@@ -93,18 +96,18 @@ func sendBatchToFirehose(deliveryStreamName string, batch []AccessLog) {
 		}
 	}
 
-	output, err := FirehoseClient.PutRecordBatch(context.Background(), &firehose.PutRecordBatchInput{
+	output, err := aws.FirehoseClient.PutRecordBatch(context.Background(), &firehose.PutRecordBatchInput{
 		DeliveryStreamName: &deliveryStreamName,
 		Records:            records,
 	})
 
 	if err != nil {
-		logger.Error(logPrefix, "Failed to send batch to Firehose, err.Error()", err)
+		logging.Error("Failed to send batch to Firehose, err.Error()", err)
 		return
 	}
 
 	if *output.FailedPutCount > int32(0) {
-		logger.Error(logPrefix, fmt.Sprintf("Failed to send %d of %d batch entries", output.FailedPutCount, len(batch)))
+		logging.Error(fmt.Sprintf("Failed to send %d of %d batch entries", output.FailedPutCount, len(batch)))
 	}
 
 	return

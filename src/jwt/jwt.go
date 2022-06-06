@@ -1,4 +1,4 @@
-package main
+package jwt
 
 import (
 	"encoding/json"
@@ -17,7 +17,7 @@ type OAuth2ServiceJwt struct {
 	AndroidId      *string     `json:"android_id"`
 }
 
-func getOAuth2ServiceJwt(authorizationHeaders []string) (*OAuth2ServiceJwt, error) {
+func GetOAuth2ServiceJwt(authorizationHeaders []string) (*OAuth2ServiceJwt, error) {
 	if len(authorizationHeaders) == 0 {
 		return nil, errors.New("no authorization header provided")
 	}

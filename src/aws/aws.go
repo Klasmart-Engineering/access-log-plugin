@@ -1,6 +1,8 @@
-package main
+package aws
 
 import (
+	"access-log/src/config"
+	"access-log/src/logging"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/firehose"
@@ -8,31 +10,31 @@ import (
 
 var FirehoseClient *firehose.Client
 
-func setupAWS(config *config) {
+func SetupAWS(config *config.Config) {
 	creds := credentials.NewStaticCredentialsProvider(
-		config.awsSecretKeyId,
-		config.awsSecretKey,
+		config.AwsSecretKeyId,
+		config.AwsSecretKey,
 		"")
 
 	var cfg aws.Config
-	if config.awsEndpoint != nil {
+	if config.AwsEndpoint != nil {
 		cfg = aws.Config{
 			Credentials: creds,
-			Region:      config.awsRegion,
+			Region:      config.AwsRegion,
 			EndpointResolverWithOptions: aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-				logger.Debug(logPrefix, "Returning AWS Endpoint (w options)", config.awsEndpoint, "for region", region)
+				logging.Debug("Returning AWS Endpoint (w options)", config.AwsEndpoint, "for region", region)
 				return aws.Endpoint{
 					PartitionID:   "aws",
-					URL:           *config.awsEndpoint,
+					URL:           *config.AwsEndpoint,
 					SigningRegion: region,
 				}, nil
 			}),
 			EndpointResolver: aws.EndpointResolverFunc(func(service, region string) (aws.Endpoint, error) {
 				//Despite being deprecated, it seems this is actually still used sometimes
-				logger.Debug(logPrefix, "Returning AWS Endpoint", config.awsEndpoint, "for region", region)
+				logging.Debug("Returning AWS Endpoint", config.AwsEndpoint, "for region", region)
 				return aws.Endpoint{
 					PartitionID:   "aws",
-					URL:           *config.awsEndpoint,
+					URL:           *config.AwsEndpoint,
 					SigningRegion: region,
 				}, nil
 			}),
@@ -40,7 +42,7 @@ func setupAWS(config *config) {
 	} else {
 		cfg = aws.Config{
 			Credentials: creds,
-			Region:      config.awsRegion,
+			Region:      config.AwsRegion,
 		}
 	}
 
