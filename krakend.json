@@ -25,14 +25,14 @@
           "product_name": "Test Product",
           "buffer_size": 5,
           "firehose_batch_size": 5,
-          "firehose_send_early_timeout_ms": 180000000,
+          "firehose_send_early_timeout_ms": 10,
           "aws_secret_key_id": "123456",
           "aws_secret_key": "123456",
           "aws_endpoint": "http://localstack:4566",
           "aws_region": "eu-west-1",
           "delivery_stream_name": "factory-access-logs",
           "ignore_paths": [
-            "/__health",
+            "/health",
             "/__stats",
             "/ignored/*"
           ]

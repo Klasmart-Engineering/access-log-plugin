@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"bytes"
 	"context"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -9,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3Types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/cenkalti/backoff/v4"
+	"io"
 	"net/http"
 	"strings"
 	"testing"
@@ -94,6 +96,18 @@ func ResetLocalstack(t *testing.T) {
 	}
 
 	bucketName := "factory-access-log-bucket"
+
+	objects := listObjectsOrEmpty(t, bucketName)
+
+	for _, object := range objects {
+		_, err = s3Client.DeleteObject(context.Background(), &s3.DeleteObjectInput{
+			Bucket: &bucketName,
+			Key:    &object,
+		})
+		if err != nil {
+			t.Fatalf("Could not delete object %s: %s", object, err)
+		}
+	}
 
 	_, err = s3Client.DeleteBucket(context.Background(), &s3.DeleteBucketInput{
 		Bucket: &bucketName,
@@ -209,4 +223,54 @@ func waitForS3(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Timed out waiting for S3: %s", err)
 	}
+}
+
+func ListObjects(t *testing.T, bucketName string) []string {
+	output, err := s3Client.ListObjectsV2(context.Background(), &s3.ListObjectsV2Input{
+		Bucket: &bucketName,
+	})
+	if err != nil {
+		t.Fatalf("Could not list objects in bucket: %s", err)
+	}
+
+	objectKeys := make([]string, output.KeyCount)
+	for i, item := range output.Contents {
+		objectKeys[i] = *item.Key
+	}
+
+	return objectKeys
+}
+
+func listObjectsOrEmpty(t *testing.T, bucketName string) []string {
+	output, err := s3Client.ListObjectsV2(context.Background(), &s3.ListObjectsV2Input{
+		Bucket: &bucketName,
+	})
+	if err != nil {
+		return make([]string, 0)
+	}
+
+	objectKeys := make([]string, output.KeyCount)
+	for i, item := range output.Contents {
+		objectKeys[i] = *item.Key
+	}
+
+	return objectKeys
+}
+
+func GetObjectContent(t *testing.T, bucketName string, objectKey string) []byte {
+	object, err := s3Client.GetObject(context.Background(), &s3.GetObjectInput{
+		Bucket: &bucketName,
+		Key:    &objectKey,
+	})
+	if err != nil {
+		t.Fatalf("Could not get object content: %s", err)
+	}
+
+	buf := &bytes.Buffer{}
+	_, err = io.Copy(buf, object.Body)
+	if err != nil {
+		t.Fatalf("Could not read object content: %s", err)
+	}
+
+	return buf.Bytes()
 }

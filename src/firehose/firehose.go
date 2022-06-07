@@ -36,7 +36,6 @@ func FirehoseSync(config *config.Config, accesses chan AccessLog) {
 
 	sendBatch := func() {
 		if batchCursor == 0 {
-			logging.Debug("Nothing in batch to send")
 			return
 		}
 
@@ -62,7 +61,6 @@ func FirehoseSync(config *config.Config, accesses chan AccessLog) {
 				sendBatch()
 			}
 		case <-time.After(time.Duration(config.FirehoseSendEarlyTimeoutMs) * time.Millisecond):
-			logging.Debug("Sending batch early as send early timeout exceeded")
 			sendBatch()
 		case <-exit:
 			logging.Debug("Krakend shutting down, sending batch")
@@ -85,7 +83,6 @@ func sendBatchToFirehose(deliveryStreamName string, batch []AccessLog) {
 
 	records := make([]types.Record, len(batch))
 	for i, batchEntry := range batch {
-		//Note: this may be switched to another format after discussion with Aidan
 		serialised, err := json.Marshal(batchEntry)
 		if err != nil {
 			logging.Error("Failed to serialise batch entry", batchEntry, err)
