@@ -1,10 +1,10 @@
 # Microgateway access-log plugin
 
-This is a Krakend plugin that pushes access log entries to Firehose.  The entries contain:
+This is a [HTTP Server Plugin](https://www.krakend.io/docs/extending/http-server-plugins/) for Krakend that pushes access log entries to Firehose.  The entries contain:
 
- - Method
- - Path
- - Time
+ - HTTP Method
+ - Relative Path
+ - Time (Unix Epoch)
  - Subscription Id (taken from the Authorization header JWT)
  - Android Id (taken from the Authorization header JWT)
  - Product Name (from config, to identify this KL Product and group usage)

@@ -38,18 +38,18 @@ func (r registerer) RegisterHandlers(f func(
 }
 
 func (r registerer) registerHandlers(ctx context.Context, extra map[string]interface{}, handler http.Handler) (http.Handler, error) {
-	config, err := config.GetConfig(extra)
+	configuration, err := config.GetConfig(extra)
 	if err != nil {
 		return nil, err
 	}
 
-	aws.SetupAWS(config)
+	aws.SetupAWS(configuration)
 
-	accesses := make(chan firehose.AccessLog, config.ChannelBufferSize)
-	go firehose.FirehoseSync(config, accesses)
+	accesses := make(chan firehose.AccessLog, configuration.ChannelBufferSize)
+	go firehose.FirehoseSync(configuration, accesses)
 
 	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		if config.IgnoredPaths.AnyMatch(req.URL.Path) {
+		if configuration.IgnoredPaths.AnyMatch(req.URL.Path) {
 			logging.Debug("Ignoring request to ", req.URL, "ignored path")
 			handler.ServeHTTP(w, req)
 			return
@@ -77,7 +77,7 @@ func (r registerer) registerHandlers(ctx context.Context, extra map[string]inter
 		accesses <- firehose.AccessLog{
 			Id:             uuid2.New(),
 			OccurredAt:     time.Now().Unix(),
-			Product:        config.ProductName,
+			Product:        configuration.ProductName,
 			Method:         req.Method,
 			Path:           req.URL.Path,
 			AndroidId:      *oAuth2ServiceJwt.AndroidId,

@@ -27,7 +27,6 @@ test-unit:
 test-integration:
 	docker-compose -f docker-compose.yaml down --remove-orphans && \
     docker-compose -f docker-compose.yaml rm -fv && \
-    rm -rf ./postgres-integration-data && \
     make b && \
     docker-compose -f docker-compose.yaml up -d && \
     echo "Starting integration tests" && \
