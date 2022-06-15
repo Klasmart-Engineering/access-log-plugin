@@ -4,6 +4,8 @@ import (
 	"access-log/src/firehose"
 	"access-log/test/integration/helper"
 	"encoding/json"
+	"errors"
+	"github.com/cenkalti/backoff/v4"
 	uuid2 "github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,11 +24,14 @@ func TestNoS3EntryIsWrittenForIgnoredPath(t *testing.T) {
 		t.Fatalf("Couldn't call endpoint: %s", err)
 	}
 
-	//Buffer time for Firehose is set to 60 seconds, buffer timeout in gateway set to 10s - so worst case should be
-	//70 seconds + processing time on Firehose mock for objects to appear in S3.
-	time.Sleep(75 * time.Second)
+	//Buffer time for Firehose is set to 60 seconds, buffer timeout in gateway set to 1ms - so worst case should be
+	//60 seconds + processing time on Firehose mock for objects to appear in S3.
+	time.Sleep(65 * time.Second)
 
-	keys := helper.ListObjects(t, "factory-access-log-bucket")
+	keys, err := helper.ListObjects(t, "factory-access-log-bucket")
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	require.Empty(t, keys)
 }
@@ -43,13 +48,32 @@ func TestS3EntryWrittenForNonIgnoredPath(t *testing.T) {
 		t.Fatalf("Couldn't call endpoint: %s", err)
 	}
 
-	//Buffer time for Firehose is set to 60 seconds, buffer timeout in gateway set to 10s - so worst case should be
-	//70 seconds + processing time on Firehose mock for objects to appear in S3.
-	time.Sleep(75 * time.Second)
+	var keys []string
+	var check = func() error {
+		keys, err = helper.ListObjects(t, "factory-access-log-bucket")
+		if err != nil {
+			return err
+		}
 
-	keys := helper.ListObjects(t, "factory-access-log-bucket")
+		if len(keys) != 1 {
+			return errors.New("no object in bucket yet")
+		}
 
-	require.Len(t, keys, 1)
+		return nil
+	}
+
+	err = backoff.Retry(check, &backoff.ExponentialBackOff{
+		InitialInterval:     100 * time.Millisecond,
+		RandomizationFactor: 0.5,
+		Multiplier:          1.2,
+		MaxInterval:         1 * time.Second,
+		MaxElapsedTime:      65 * time.Second,
+		Stop:                -1,
+		Clock:               backoff.SystemClock,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	content := helper.GetObjectContent(t, "factory-access-log-bucket", keys[0])
 

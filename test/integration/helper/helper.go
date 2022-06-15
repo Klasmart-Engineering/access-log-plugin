@@ -3,6 +3,7 @@ package helper
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/firehose"
@@ -225,12 +226,12 @@ func waitForS3(t *testing.T) {
 	}
 }
 
-func ListObjects(t *testing.T, bucketName string) []string {
+func ListObjects(t *testing.T, bucketName string) ([]string, error) {
 	output, err := s3Client.ListObjectsV2(context.Background(), &s3.ListObjectsV2Input{
 		Bucket: &bucketName,
 	})
 	if err != nil {
-		t.Fatalf("Could not list objects in bucket: %s", err)
+		return nil, fmt.Errorf("could not list objects in bucket: %s", err)
 	}
 
 	objectKeys := make([]string, output.KeyCount)
@@ -238,7 +239,7 @@ func ListObjects(t *testing.T, bucketName string) []string {
 		objectKeys[i] = *item.Key
 	}
 
-	return objectKeys
+	return objectKeys, nil
 }
 
 func listObjectsOrEmpty(t *testing.T, bucketName string) []string {
