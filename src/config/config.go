@@ -52,7 +52,7 @@ func GetConfig(extra map[string]interface{}) (*Config, error) {
 	var channelBufferSize int
 	var channelBufferSizeRaw float64
 	if channelBufferSizeRaw, ok = (extra["access-log"].(map[string]interface{})["buffer_size"]).(float64); !ok {
-		return nil, errors.New("buffer_size in access-log config map in krakend.json must be an int")
+		channelBufferSizeRaw = 1000
 	}
 
 	channelBufferSize = int(channelBufferSizeRaw)
@@ -60,7 +60,7 @@ func GetConfig(extra map[string]interface{}) (*Config, error) {
 	var firehoseBatchSize int
 	var firehoseBatchSizeRaw float64
 	if firehoseBatchSizeRaw, ok = (extra["access-log"].(map[string]interface{})["firehose_batch_size"]).(float64); !ok {
-		return nil, errors.New("firehose_batch_size in access-log config map in krakend.json must be an int")
+		firehoseBatchSizeRaw = 500
 	}
 
 	firehoseBatchSize = int(firehoseBatchSizeRaw)
@@ -68,7 +68,7 @@ func GetConfig(extra map[string]interface{}) (*Config, error) {
 	var firehoseSendEarlyTimeoutMs int
 	var firehoseSendEarlyTimeoutMsRaw float64
 	if firehoseSendEarlyTimeoutMsRaw, ok = (extra["access-log"].(map[string]interface{})["firehose_send_early_timeout_ms"]).(float64); !ok {
-		return nil, errors.New("firehose_send_early_timeout_ms in access-log config map in krakend.json must be an int")
+		firehoseSendEarlyTimeoutMsRaw = 60000
 	}
 
 	firehoseSendEarlyTimeoutMs = int(firehoseSendEarlyTimeoutMsRaw)

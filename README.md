@@ -40,6 +40,8 @@ In your krakend.json, in the top level `extra_config`, under `plugin/http-server
 }
 ```
 
+You can omit buffer_size, firehose_batch_size and firehouse_send_early_timeout_ms to use default values.  However, if you want to override these using environment variables [they must be present in krakend.json](https://www.krakend.io/docs/configuration/environment-vars/).
+
  - product_name: Your product name (e.g. `Content API`).
  - buffer_size: Size of the channel buffer used to enqueue access log entries to be batched.  This should be set to a value higher than the number of concurrent requests you expect to handle at peak traffic to avoid blocking the goroutine handling the request.
  - firehose_batch_size: Access log entries are read from the channel into a batch, once the batch reaches this size it is pushed to Firehose.  The max batch size for Firehose is 500 with a total size of 4MB, a typical entry will be around 237 bytes encoded as JSON so it is safe to set this to the full 500. 
