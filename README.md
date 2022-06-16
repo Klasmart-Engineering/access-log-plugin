@@ -25,12 +25,12 @@ In your krakend.json, in the top level `extra_config`, under `plugin/http-server
 ],
 "access-log": {
    "product_name": "Test Product",
-   "buffer_size": 5,
-   "firehose_batch_size": 5,
-   "firehose_send_early_timeout_ms": 10,
+   "buffer_size": 1000,
+   "firehose_batch_size": 500,
+   "firehose_send_early_timeout_ms": 60000,
    "aws_secret_key_id": "123456",
    "aws_secret_key": "123456",
-   "aws_region": "eu-west-1",
+   "aws_region": "eu-west-2",
    "delivery_stream_name": "factory-access-logs",
    "ignore_paths": [
       "/health",
