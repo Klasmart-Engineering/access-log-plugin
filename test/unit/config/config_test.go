@@ -8,7 +8,7 @@ import (
 
 func TestPatternsAndPathsProduceExpectedOutput(t *testing.T) {
 	tests := map[string]struct {
-		ignoredPath config.IgnoredPath
+		ignoredPath string
 		requestPath string
 		want        bool
 	}{
@@ -22,9 +22,7 @@ func TestPatternsAndPathsProduceExpectedOutput(t *testing.T) {
 
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
-			got := config.IgnoredPaths{
-				tc.ignoredPath,
-			}.AnyMatch(tc.requestPath)
+			got := config.NewIgnoredPaths([]string{tc.ignoredPath}).AnyMatch(tc.requestPath)
 
 			require.Equal(t, tc.want, got)
 		})

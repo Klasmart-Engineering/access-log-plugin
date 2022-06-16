@@ -2,6 +2,7 @@ package config
 
 import (
 	"errors"
+	"strings"
 )
 
 type Config struct {
@@ -17,8 +18,7 @@ type Config struct {
 	DeliveryStreamName         string
 }
 
-type IgnoredPath string
-type IgnoredPaths []IgnoredPath
+type IgnoredPaths map[string]interface{}
 
 func GetConfig(extra map[string]interface{}) (*Config, error) {
 	if _, exists := extra["access-log"]; !exists {
@@ -40,14 +40,16 @@ func GetConfig(extra map[string]interface{}) (*Config, error) {
 		return nil, errors.New("ignore_paths in access-log config map in krakend.json must be an array")
 	}
 
-	ignoredPaths := make([]IgnoredPath, len(ignoredPathsRaw))
-	for i, path := range ignoredPathsRaw {
+	ignoredPathsList := make([]string, len(ignoredPathsRaw))
+	for _, path := range ignoredPathsRaw {
 		if _, isString := path.(string); !isString {
 			return nil, errors.New("ignore_paths in access-log config map in krakend.json must contain only strings")
 		}
 
-		ignoredPaths[i] = IgnoredPath(path.(string))
+		ignoredPathsList = append(ignoredPathsList, path.(string))
 	}
+
+	ignoredPaths := NewIgnoredPaths(ignoredPathsList)
 
 	var channelBufferSize int
 	var channelBufferSizeRaw float64
@@ -117,48 +119,39 @@ func GetConfig(extra map[string]interface{}) (*Config, error) {
 	}, nil
 }
 
-func (ignoredPath IgnoredPath) matches(path string) bool {
-	var ignoredPathIndex, pathIndex int
-	for {
-		ignoredPathChar := ignoredPath[ignoredPathIndex]
-		pathChar := path[pathIndex]
-		var peekPathChar uint8
-		canPeekPathChar := pathIndex != len(path)-1
-		if canPeekPathChar {
-			peekPathChar = path[pathIndex+1]
-		}
-
-		if ignoredPathChar != pathChar && ignoredPathChar != '*' {
-			return false
-		}
-
-		if ignoredPathIndex == len(ignoredPath)-1 && pathIndex == len(path)-1 {
-			return true
-		}
-
-		if (ignoredPathIndex == len(ignoredPath)-1 && ignoredPathChar != '*') || pathIndex == len(path)-1 {
-			return false
-		}
-
-		if ignoredPathChar != '*' || (ignoredPathChar == '*' && canPeekPathChar && peekPathChar == '/') {
-			if ignoredPathIndex == len(ignoredPath)-1 {
-				return false
+func NewIgnoredPaths(paths []string) IgnoredPaths {
+	ignoredPaths := make(map[string]interface{})
+	for _, path := range paths {
+		pathSegments := strings.Split(path, "/")
+		current := ignoredPaths
+		for _, segment := range pathSegments {
+			if _, exists := current[segment]; !exists {
+				current[segment] = make(map[string]interface{})
 			}
 
-			ignoredPathIndex += 1
+			current = current[segment].(map[string]interface{})
 		}
-
-		pathIndex += 1
 	}
 
+	return ignoredPaths
 }
 
 func (ignoredPaths IgnoredPaths) AnyMatch(path string) bool {
-	for _, ignoredPath := range ignoredPaths {
-		if ignoredPath.matches(path) {
-			return true
+	pathSegments := strings.Split(path, "/")
+	current := ignoredPaths
+	for _, segment := range pathSegments {
+		if _, contains := current[segment]; contains {
+			current = current[segment].(map[string]interface{})
+			continue
 		}
+
+		if _, contains := current["*"]; contains {
+			current = current["*"].(map[string]interface{})
+			continue
+		}
+
+		return false
 	}
 
-	return false
+	return true
 }
