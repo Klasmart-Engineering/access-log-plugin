@@ -9,14 +9,6 @@
       "stdout": true,
       "format": "logstash"
       },
-      "plugin/http-server": {
-        "name": [
-          "access-log"
-        ],
-        "access-log": {
-          "product_name": "Test Product"
-        }
-      },
       "github_com/devopsfaith/krakend-metrics": {
         "collection_time": "60s",
         "proxy_disabled": false,
@@ -24,6 +16,27 @@
         "backend_disabled": false,
         "endpoint_disabled": false,
         "listen_address": ":8090"
+      },
+      "plugin/http-server": {
+        "name": [
+          "access-log"
+        ],
+        "access-log": {
+          "product_name": "Test Product",
+          "buffer_size": 5,
+          "firehose_batch_size": 5,
+          "firehose_send_early_timeout_ms": 1,
+          "aws_secret_key_id": "123456",
+          "aws_secret_key": "123456",
+          "aws_endpoint": "http://localstack:4566",
+          "aws_region": "eu-west-1",
+          "delivery_stream_name": "factory-access-logs",
+          "ignore_paths": [
+            "/__health",
+            "/__stats",
+            "/ignored/*"
+          ]
+        }
       },
       "router": {
         "logger_skip_paths": [
@@ -52,6 +65,18 @@
                 "host": ["https://jsonplaceholder.typicode.com"],
                 "url_pattern": "/users/{id}"
             }
+        ]
+      },
+      {
+        "endpoint": "/ignored/{id}",
+        "method": "GET",
+        "output_encoding": "json",
+        "backend": [
+          {
+            "method": "GET",
+            "host": ["https://jsonplaceholder.typicode.com"],
+            "url_pattern": "/users/{id}"
+          }
         ]
       }
   ]
