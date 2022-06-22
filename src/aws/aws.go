@@ -10,9 +10,18 @@ import (
 var FirehoseClient *firehose.Client
 
 func SetupAWS(config *config.Config) {
+	if !config.UseAwsDefaultCredentials {
+		setupWithManuallyProvidedConfig(config)
+		return
+	}
+
+	setupWithDefaults(config)
+}
+
+func setupWithManuallyProvidedConfig(config *config.Config) {
 	creds := credentials.NewStaticCredentialsProvider(
-		config.AwsSecretKeyId,
-		config.AwsSecretKey,
+		*config.AwsSecretKeyId,
+		*config.AwsSecretKey,
 		"")
 
 	var cfg aws.Config
@@ -41,6 +50,14 @@ func SetupAWS(config *config.Config) {
 			Credentials: creds,
 			Region:      config.AwsRegion,
 		}
+	}
+
+	FirehoseClient = firehose.NewFromConfig(cfg)
+}
+
+func setupWithDefaults(config *config.Config) {
+	cfg := aws.Config{
+		Region: config.AwsRegion,
 	}
 
 	FirehoseClient = firehose.NewFromConfig(cfg)
