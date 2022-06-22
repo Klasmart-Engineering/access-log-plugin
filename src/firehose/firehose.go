@@ -7,23 +7,24 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/aws/aws-sdk-go-v2/service/firehose"
-	"github.com/aws/aws-sdk-go-v2/service/firehose/types"
-	uuid2 "github.com/google/uuid"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/aws/aws-sdk-go-v2/service/firehose"
+	"github.com/aws/aws-sdk-go-v2/service/firehose/types"
+	uuid2 "github.com/google/uuid"
 )
 
 type AccessLog struct {
-	Id             uuid2.UUID
-	OccurredAt     int64
-	Product        string
-	Method         string
-	Path           string
-	AndroidId      string
-	SubscriptionId uuid2.UUID
+	Id             uuid2.UUID `json:"id"`
+	OccurredAt     int64      `json:"occurred_at"`
+	Product        string     `json:"product"`
+	Method         string     `json:"method"`
+	Path           string     `json:"path"`
+	AndroidId      string     `json:"android_id"`
+	SubscriptionId uuid2.UUID `json:"subscription_id"`
 }
 
 func FirehoseSync(config *config.Config, accesses chan AccessLog) {
