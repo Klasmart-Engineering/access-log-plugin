@@ -2,7 +2,10 @@ package aws
 
 import (
 	"access-log/src/config"
+	"context"
+
 	"github.com/aws/aws-sdk-go-v2/aws"
+	cfg "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/service/firehose"
 )
@@ -56,9 +59,12 @@ func setupWithManuallyProvidedConfig(config *config.Config) {
 }
 
 func setupWithDefaults(config *config.Config) {
-	cfg := aws.Config{
-		Region: config.AwsRegion,
+	configuration, err := cfg.LoadDefaultConfig(context.TODO())
+	if err != nil {
+		panic(err)
 	}
 
-	FirehoseClient = firehose.NewFromConfig(cfg)
+	FirehoseClient = firehose.NewFromConfig(configuration, func(o *firehose.Options) {
+		o.Region = config.AwsRegion
+	})
 }
