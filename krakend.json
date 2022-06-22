@@ -26,6 +26,7 @@
           "buffer_size": 5,
           "firehose_batch_size": 5,
           "firehose_send_early_timeout_ms": 1,
+          "use_aws_default_credentials": false,
           "aws_secret_key_id": "123456",
           "aws_secret_key": "123456",
           "aws_endpoint": "http://localstack:4566",

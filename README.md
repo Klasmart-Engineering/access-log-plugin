@@ -28,12 +28,13 @@ In your krakend.json, in the top level `extra_config`, under `plugin/http-server
    "buffer_size": 1000,
    "firehose_batch_size": 500,
    "firehose_send_early_timeout_ms": 60000,
+   "use_aws_default_credentials": false,
    "aws_secret_key_id": "123456",
    "aws_secret_key": "123456",
    "aws_region": "eu-west-2",
-   "delivery_stream_name": "factory-access-logs",
+   "delivery_stream_name": "subscriptions-uk-apifactory-api-usage",
    "ignore_paths": [
-      "/health",
+      "/__health",
       "/__stats",
       "/ignored/*"
    ]
@@ -46,9 +47,10 @@ You can omit buffer_size, firehose_batch_size and firehouse_send_early_timeout_m
  - buffer_size: Size of the channel buffer used to enqueue access log entries to be batched.  This should be set to a value higher than the number of concurrent requests you expect to handle at peak traffic to avoid blocking the goroutine handling the request.
  - firehose_batch_size: Access log entries are read from the channel into a batch, once the batch reaches this size it is pushed to Firehose.  The max batch size for Firehose is 500 with a total size of 4MB, a typical entry will be around 237 bytes encoded as JSON so it is safe to set this to the full 500. 
  - firehose_send_early_timeout_ms: If this number of ms passes before the batch size is reached, the batch will be sent anyway.  This is useful to avoid periods of low usage resulting in sporadic entries not being sent for long periods of time.
+ - use_aws_default_credentials: If true then aws_secret_key_id/aws_secret_key are ignored and the default AWS credentials provider is used instead - this will assume the role of the Pod's service account if it has one.
  - aws_region: Region the gateway is deployed to.
- - aws_secret_key_id/aws_secret_key: AWS credentials - override with environment variables in test/production (https://www.krakend.io/docs/configuration/environment-vars/).
- - delivery_stream_name: The Firehose delivery stream name - factory-access-logs usually.
+ - aws_secret_key_id/aws_secret_key: AWS credentials - override with environment variables in test/production (https://www.krakend.io/docs/configuration/environment-vars/) or omit and provide use_aws_default_credentials if your Pod has a service account with a role.
+ - delivery_stream_name: The Firehose delivery stream name, e.g. subscriptions-uk-apifactory-api-usage.
  - ignore_paths: An array of paths to ignore - this should contain any paths that don't require authentication.  You can use a * instead of a path segment to match anything in that segment.
 
 ## Working on this repo

@@ -11,8 +11,9 @@ type Config struct {
 	ChannelBufferSize          int
 	FirehoseBatchSize          int
 	FirehoseSendEarlyTimeoutMs int
-	AwsSecretKeyId             string
-	AwsSecretKey               string
+	AwsSecretKeyId             *string
+	AwsSecretKey               *string
+	UseAwsDefaultCredentials   bool
 	AwsEndpoint                *string
 	AwsRegion                  string
 	DeliveryStreamName         string
@@ -75,14 +76,19 @@ func GetConfig(extra map[string]interface{}) (*Config, error) {
 
 	firehoseSendEarlyTimeoutMs = int(firehoseSendEarlyTimeoutMsRaw)
 
-	var awsSecretKeyId string
-	if awsSecretKeyId, ok = (extra["access-log"].(map[string]interface{})["aws_secret_key_id"]).(string); !ok {
-		return nil, errors.New("aws_secret_key_id in access-log config map in krakend.json must be a string")
+	var useAwsDefaultCredentials bool
+	if useAwsDefaultCredentials, ok = (extra["access-log"].(map[string]interface{})["use_aws_default_credentials"]).(bool); !ok {
+		return nil, errors.New("use_aws_default_credentials in access-log config map in krakend.json must be a boolean")
 	}
 
-	var awsSecretKey string
-	if awsSecretKey, ok = (extra["access-log"].(map[string]interface{})["aws_secret_key"]).(string); !ok {
-		return nil, errors.New("aws_secret_key in access-log config map in krakend.json must be a string")
+	var awsSecretKeyId *string
+	if awsSecretKeyIdRaw, ok := (extra["access-log"].(map[string]interface{})["aws_secret_key_id"]).(string); ok {
+		awsSecretKeyId = &awsSecretKeyIdRaw
+	}
+
+	var awsSecretKey *string
+	if awsSecretKeyRaw, ok := (extra["access-log"].(map[string]interface{})["aws_secret_key"]).(string); ok {
+		awsSecretKey = &awsSecretKeyRaw
 	}
 
 	var awsEndpoint *string
@@ -111,6 +117,7 @@ func GetConfig(extra map[string]interface{}) (*Config, error) {
 		ChannelBufferSize:          channelBufferSize,
 		FirehoseBatchSize:          firehoseBatchSize,
 		FirehoseSendEarlyTimeoutMs: firehoseSendEarlyTimeoutMs,
+		UseAwsDefaultCredentials:   useAwsDefaultCredentials,
 		AwsSecretKeyId:             awsSecretKeyId,
 		AwsSecretKey:               awsSecretKey,
 		AwsEndpoint:                awsEndpoint,
