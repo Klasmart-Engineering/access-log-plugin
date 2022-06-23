@@ -89,6 +89,8 @@ func sendBatchToFirehose(deliveryStreamName string, batch []AccessLog) {
 			logging.Error("Failed to serialise batch entry", batchEntry, err)
 		}
 
+		serialised = append(serialised, "\n"...)
+
 		records[i] = types.Record{
 			Data: serialised,
 		}
